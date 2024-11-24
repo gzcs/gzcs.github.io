@@ -1,0 +1,52 @@
+name: OSS Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: OSSDEV
+    steps:
+      - name: Git Configuration
+        run: |
+          git config --global core.quotePath false
+          git config --global core.autocrlf false
+          git config --global core.safecrlf true
+          git config --global core.ignorecase false
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          
+      - name: Build Pages
+        run: |
+          mkdir -p public
+          rsync -av --exclude=public --exclude='.*' . ./public
+          
+      - name: deploy-upyun
+        env:
+          OSS_AKID: ${{ secrets.OSSAKID }}
+          OSS_AKSECRET: ${{ secrets.OSSAKSECRET }}
+          OSS_BUCKET: ${{ secrets.OSSBUCKET }}
+          LOCAL_DIR: ./public/
+          REMOTE_DIR: /
+        run: |
+          wget https://gosspublic.alicdn.com/ossutil/1.7.19/ossutil-v1.7.19-linux-amd64.zip || { echo "Download failed"; exit 1; }
+          unzip ossutil-v1.7.19-linux-amd64.zip || { echo "Extracting failed"; exit 1; }
+          chmod +x ./ossutil-v1.7.19-linux-amd64/ossutil64 || { echo "Permission setting failed"; exit 1; }
+          echo "${OSS_AKID} is operating"
+          ./ossutil-v1.7.19-linux-amd64/ossutil64 -e oss-cn-beijing.aliyuncs.com -i ${OSS_AKID} -k ${OSS_AKSECRET} cp -r {LOCAL_DIR} oss://${OSS_BUCKET}${REMOTE_DIR}
+          echo 'Finished.'
