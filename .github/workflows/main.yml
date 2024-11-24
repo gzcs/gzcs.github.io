@@ -34,9 +34,9 @@ jobs:
       - name: Build Pages
         run: |
           mkdir -p public
-          rsync -av --exclude=public --exclude='.*' . ./public
+          rsync -av --exclude=public --exclude='.*' . ./public/
           
-      - name: deploy-upyun
+      - name: deploy-oss
         env:
           OSS_AKID: ${{ secrets.OSSAKID }}
           OSS_AKSECRET: ${{ secrets.OSSAKSECRET }}
@@ -48,5 +48,5 @@ jobs:
           unzip ossutil-v1.7.19-linux-amd64.zip || { echo "Extracting failed"; exit 1; }
           chmod +x ./ossutil-v1.7.19-linux-amd64/ossutil64 || { echo "Permission setting failed"; exit 1; }
           echo "${OSS_AKID} is operating"
-          ./ossutil-v1.7.19-linux-amd64/ossutil64 -e oss-cn-beijing.aliyuncs.com -i ${OSS_AKID} -k ${OSS_AKSECRET} cp -r {LOCAL_DIR} oss://${OSS_BUCKET}${REMOTE_DIR}
+          ./ossutil-v1.7.19-linux-amd64/ossutil64 -e oss-cn-beijing.aliyuncs.com -i ${OSS_AKID} -k ${OSS_AKSECRET} cp -rf ${LOCAL_DIR} oss://${OSS_BUCKET}${REMOTE_DIR}
           echo 'Finished.'
